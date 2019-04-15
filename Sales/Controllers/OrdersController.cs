@@ -109,7 +109,7 @@ namespace Orders.Controllers
         // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(Orders.Models.ViewModelOrder model) // IFormCollection collection)
+        public ActionResult Create(Orders.Models.ViewModelOrder model) 
         {
             try
             {
@@ -132,7 +132,7 @@ namespace Orders.Controllers
                         CustomerId = customer.Id,
                         Comment = model.Comment,
                         OrderDate = DateTime.Now,
-                        StatusId = ctx.SalesStatus.FirstOrDefault(s => s.Name.Equals("подтвержден", StringComparison.CurrentCultureIgnoreCase)).Id,
+                        StatusId = GetOrderStatusId("подтвержден")
                     });
 
                 ctx.SaveChanges();
@@ -152,10 +152,6 @@ namespace Orders.Controllers
             SalesOrder order = ctx.SalesOrder.FirstOrDefault(o => o.Id == id);
             if (order != null)
             {
-                ViewData["Status"] = order.Status?.Name; //,ctx.SalesStatus.FirstOrDefault(s => s.Id == order.StatusId).Name;
-                ViewData["StatusId"] = order.StatusId;
-                ViewData["Statuses"] = ctx.SalesStatus.Select(s => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = s.Id.ToString(), Text = s.Name, Selected = s.Id == 2 }).ToList();
-
                 return View(new ViewModelOrder
                 {
                     Comment = order.Comment,
@@ -164,7 +160,6 @@ namespace Orders.Controllers
                     OrderDate = order.OrderDate,
                     Statuses = ctx.SalesStatus.Select( s => new ViewModelStatus
                     {
-                        Id = s.Id,
                         Name = s.Name
                     }).ToList()
                 });
@@ -203,7 +198,7 @@ namespace Orders.Controllers
                 {
                     order.OrderDate = DateTime.Now;
                     order.Comment = model.Comment;
-                    order.StatusId = model.StatusId;
+                    order.StatusId = GetOrderStatusId(model.Status);
                     order.CustomerId = customer.Id;
                     ctx.SaveChanges();
                 }
@@ -241,6 +236,14 @@ namespace Orders.Controllers
             {
                 return View();
             }
+        }
+
+        private int GetOrderStatusId(string name)
+        {
+            return new OrdersContext()
+                .SalesStatus
+                .FirstOrDefault(s =>
+                    s.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)).Id;
         }
     }
 }

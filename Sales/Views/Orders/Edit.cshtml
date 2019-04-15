@@ -15,7 +15,7 @@
             <div class="form-group">
                 <div>@Html.LabelFor(m => m.Status)</div>
                 <div>
-                    @Html.DropDownListFor(m => m.StatusId, new SelectList(Model.Statuses, "Id", "Name"), string.Empty, new { @style = "width:200px; padding:3px;" })
+                    @Html.DropDownListFor(m => m.Status, new SelectList(Model.Statuses, "Name", "Name"), String.Empty, new { @style = "width:200px; padding:3px;" })
                     
                 </div>
             </div>
