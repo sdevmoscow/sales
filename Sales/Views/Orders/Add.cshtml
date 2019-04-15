@@ -1,0 +1,50 @@
+﻿@model Orders.Models.ViewModelAddProducts
+
+@{
+    ViewData["Title"] = "Add";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h3>Выберите товары:</h3>
+
+<form asp-action="Add" method="post">
+
+    @Html.HiddenFor(modelItem => Model.OrderId)
+
+    <table class="table">
+        
+        <tbody>
+            @for (int i = 0; i < Model.Products.Count(); i++)
+            {
+
+                <tr>
+                    <td>
+                        @Html.HiddenFor(modelItem => Model.Products[i].Id)
+                    </td>
+                    <td>
+                        @Html.CheckBoxFor(modelItem => Model.Products[i].Selected)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => Model.Products[i].Name)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => Model.Products[i].ListPrice)
+                        @Html.HiddenFor(modelItem => Model.Products[i].ListPrice)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => Model.Products[i].Comment)
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p>
+        <div class="row">
+            <div class="col-md-12">
+                <input type="submit" value="Добавить выбранные" class="btn btn-default tool-button" />
+                <a asp-action="Details" asp-route-id="@ViewData["OrderId"]" class="tool-button">Отмена</a>
+            </div>
+        </div>
+    </p>
+</form>
+
