@@ -15,27 +15,33 @@ namespace Orders.Controllers
         // GET: Orders
         public ActionResult Index()
         {
+            using (OrdersContext context = new OrdersContext())
 
-            var orders = new OrdersContext()
-                .SalesOrder
-                .Select(o => new ViewModelOrder
-                {
-                    Id = o.Id,
-                    Customer = o. Customer.Name,
-                    Status = o.Status.Name,
-                    Comment = o.Comment,
-                    OrderDate = o.OrderDate,
-                    Total = o.SalesOrderDetail.Sum(d => d.OrderQty * d.UnitPrice)
-                })
-                .ToList();
+            {
+                var orders = context
+                    .SalesOrder
+                    .Select(o => new ViewModelOrder
+                    {
+                        Id = o.Id,
+                        Customer = o.Customer.Name,
+                        Status = o.Status.Name,
+                        Comment = o.Comment,
+                        OrderDate = o.OrderDate,
+                        Total = o.SalesOrderDetail.Sum(d => d.OrderQty * d.UnitPrice)
+                    })
+                    .ToList();
 
-            return View(orders);
+                return View(orders);
+            }
         }
 
         // GET: Orders/Details/5
         public ActionResult Details(int id)
         {
-            var orderDetails = new OrdersContext()
+            using (OrdersContext context = new OrdersContext())
+
+            {
+                var orderDetails = context
                 .SalesOrderDetail
                 .Where(d => d.SalesOrderId == id)
                 .Select(d => new ViewModelOrderDetail
@@ -49,15 +55,19 @@ namespace Orders.Controllers
                 })
                 .ToList();
 
-            ViewData["OrderId"] = id;
+                ViewData["OrderId"] = id;
 
-            return View(orderDetails);
+                return View(orderDetails);
+            }
         }
 
         // GET: Orders/Add
         public ActionResult Add(int id)
         {
-            var products = new OrdersContext()
+            using (OrdersContext context = new OrdersContext())
+
+            {
+                var products = context
                 .Product
                 .Select(p => new ViewModelProduct
                 {
@@ -68,21 +78,24 @@ namespace Orders.Controllers
                 })
                 .ToList();
 
-            ViewData["OrderId"] = id;
+                ViewData["OrderId"] = id;
 
-            return View( new ViewModelAddProducts {
+                return View(new ViewModelAddProducts
+                {
                     OrderId = id,
                     Products = products
                 });
+            }
         }
 
         // Post: Orders/Add
         [HttpPost]
         public ActionResult Add(ViewModelAddProducts model) 
         {
-            OrdersContext ctx = new OrdersContext();
+            using (OrdersContext context = new OrdersContext())
 
-            ctx.SalesOrderDetail.AddRange(
+            {
+                context.SalesOrderDetail.AddRange(
                 model.Products
                     .Where(it => it.Selected)
                     .Select(it => new SalesOrderDetail
@@ -94,9 +107,10 @@ namespace Orders.Controllers
                         UnitPrice = it.ListPrice
                     }));
 
-            ctx.SaveChanges();
+                context.SaveChanges();
 
-            return RedirectToAction("Details", new { id = model.OrderId } );
+                return RedirectToAction("Details", new { id = model.OrderId });
+            }
         }
 
 
@@ -113,31 +127,34 @@ namespace Orders.Controllers
         {
             try
             {
-                OrdersContext ctx = new OrdersContext();
+                using (OrdersContext context = new OrdersContext())
 
-                Customer customer = 
-                    ctx.Customer.FirstOrDefault(c => 
-                        c.Name.Equals(model.Customer, StringComparison.CurrentCultureIgnoreCase));
-                
-                if (customer == null)
                 {
-                    customer = new Customer {  Name = model.Customer  };
-                    ctx.Customer.Add(customer);
-                    ctx.SaveChanges();
-                }
 
-                ctx.SalesOrder
-                    .Add(new SalesOrder
+                    Customer customer =
+                    context.Customer.FirstOrDefault(c =>
+                        c.Name.Equals(model.Customer, StringComparison.CurrentCultureIgnoreCase));
+
+                    if (customer == null)
                     {
-                        CustomerId = customer.Id,
-                        Comment = model.Comment,
-                        OrderDate = DateTime.Now,
-                        StatusId = GetOrderStatusId("подтвержден")
-                    });
+                        customer = new Customer { Name = model.Customer };
+                        context.Customer.Add(customer);
+                        context.SaveChanges();
+                    }
 
-                ctx.SaveChanges();
+                    context.SalesOrder
+                        .Add(new SalesOrder
+                        {
+                            CustomerId = customer.Id,
+                            Comment = model.Comment,
+                            OrderDate = DateTime.Now,
+                            StatusId = GetOrderStatusId(context, "подтвержден")
+                        });
 
-                return RedirectToAction(nameof(Index));
+                    context.SaveChanges();
+
+                    return RedirectToAction(nameof(Index));
+                }
             }
             catch
             {
@@ -148,26 +165,29 @@ namespace Orders.Controllers
         // GET: Orders/Edit/5
         public ActionResult Edit(int id)
         {
-            OrdersContext ctx = new OrdersContext();
-            SalesOrder order = ctx.SalesOrder.FirstOrDefault(o => o.Id == id);
-            if (order != null)
+            using (OrdersContext context = new OrdersContext())
+
             {
-                return View(new ViewModelOrder
+                SalesOrder order = context.SalesOrder.FirstOrDefault(o => o.Id == id);
+                if (order != null)
                 {
-                    Comment = order.Comment,
-                    Customer = order.Customer?.Name,
-                    Status = order.Status?.Name,
-                    OrderDate = order.OrderDate,
-                    Statuses = ctx.SalesStatus.Select( s => new ViewModelStatus
+                    return View(new ViewModelOrder
                     {
-                        Name = s.Name
-                    }).ToList()
-                });
-            }
-            else
-            {
-                // todo - error
-                return View();
+                        Comment = order.Comment,
+                        Customer = order.Customer?.Name,
+                        Status = order.Status?.Name,
+                        OrderDate = order.OrderDate,
+                        Statuses = context.SalesStatus.Select(s => new ViewModelStatus
+                        {
+                            Name = s.Name
+                        }).ToList()
+                    });
+                }
+                else
+                {
+                    // todo - error
+                    return View();
+                }
             }
         }
 
@@ -178,36 +198,39 @@ namespace Orders.Controllers
         {
             try
             {
-                OrdersContext ctx = new OrdersContext();
+                using (OrdersContext context = new OrdersContext())
 
-                // проверка, не изменился ли клиент:
-                Customer customer =
-                    ctx.Customer.FirstOrDefault(c =>
+                {
+
+                    // проверка, не изменился ли клиент:
+                    Customer customer =
+                    context.Customer.FirstOrDefault(c =>
                         c.Name.Equals(model.Customer, StringComparison.CurrentCultureIgnoreCase));
 
-                // создаем нового клиента, если изменился:
-                if (customer == null)
-                {
-                    customer = new Customer { Name = model.Customer };
-                    ctx.Customer.Add(customer);
-                    ctx.SaveChanges();
-                }
+                    // создаем нового клиента, если изменился:
+                    if (customer == null)
+                    {
+                        customer = new Customer { Name = model.Customer };
+                        context.Customer.Add(customer);
+                        context.SaveChanges();
+                    }
 
-                SalesOrder order = ctx.SalesOrder.FirstOrDefault(o => o.Id == model.Id);
-                if (order != null)
-                {
-                    order.OrderDate = DateTime.Now;
-                    order.Comment = model.Comment;
-                    order.StatusId = GetOrderStatusId(model.Status);
-                    order.CustomerId = customer.Id;
-                    ctx.SaveChanges();
-                }
-                else
-                {
-                    //todo - inform client
-                }
+                    SalesOrder order = context.SalesOrder.FirstOrDefault(o => o.Id == model.Id);
+                    if (order != null)
+                    {
+                        order.OrderDate = DateTime.Now;
+                        order.Comment = model.Comment;
+                        order.StatusId = GetOrderStatusId(context, model.Status);
+                        order.CustomerId = customer.Id;
+                        context.SaveChanges();
+                    }
+                    else
+                    {
+                        //todo - inform client
+                    }
 
-                return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(Index));
+                }
             }
             catch
             {
@@ -238,9 +261,9 @@ namespace Orders.Controllers
             }
         }
 
-        private int GetOrderStatusId(string name)
+        private int GetOrderStatusId(OrdersContext context, string name)
         {
-            return new OrdersContext()
+            return context
                 .SalesStatus
                 .FirstOrDefault(s =>
                     s.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)).Id;
